@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables — 不要提交真实 API Key！
+.env
+
+# Editor
+.DS_Store
