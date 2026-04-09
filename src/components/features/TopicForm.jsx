@@ -106,7 +106,7 @@ export default function TopicForm({
                     type="button"
                     onClick={() => onTopicDirectionChange(item)}
                     className={[
-                      'text-[12px] px-2.5 py-1.5 rounded-full border transition-colors',
+                      'text-[13px] px-2.5 py-1.5 rounded-full border transition-colors',
                       topicDirection === item
                         ? 'bg-accent text-black border-accent'
                         : 'bg-base text-text-muted border-border hover:text-text-primary',
@@ -127,7 +127,7 @@ export default function TopicForm({
                     type="button"
                     onClick={() => onTargetAudienceChange(item)}
                     className={[
-                      'text-[12px] px-2.5 py-1.5 rounded-full border transition-colors',
+                      'text-[13px] px-2.5 py-1.5 rounded-full border transition-colors',
                       targetAudience === item
                         ? 'bg-accent text-black border-accent'
                         : 'bg-base text-text-muted border-border hover:text-text-primary',
@@ -155,8 +155,7 @@ export default function TopicForm({
           </>
         ) : (
           <div className="flex-1 min-h-0">
-            <div className="mb-2 overflow-x-auto whitespace-nowrap pb-1">
-              <div className="inline-flex gap-1.5">
+            <div className="mb-2 flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={() => onViralNoteChange(VIRAL_QUICK_EXAMPLES.food)}
@@ -178,7 +177,6 @@ export default function TopicForm({
               >
                 情感类爆款示例
               </button>
-              </div>
             </div>
             <Textarea
               label="爆款笔记"

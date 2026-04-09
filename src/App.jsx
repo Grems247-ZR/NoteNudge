@@ -5,6 +5,7 @@ import TopicList from './components/features/TopicList'
 import ResultPanel from './components/features/ResultPanel'
 import Card from './components/ui/Card'
 import { analyzeContent, analyzeViralContent, generatePostCopy } from './lib/analyzer'
+import { REDEEM_CODE_LIST } from './config/redeemCodes'
 
 const HISTORY_KEY = 'xiaohongshu-recent-analyses'
 const USAGE_KEY = 'xiaohongshu-usage-state'
@@ -69,69 +70,39 @@ function getUsageStatusText(usageState) {
   return `今日剩余 ${left} 次`
 }
 
-function RedeemModal({ open, onClose, onPaid }) {
-  const [planTab, setPlanTab] = useState('trial')
+function RedeemModal({ open, onClose, onRedeem }) {
+  const [planTab, setPlanTab] = useState('experience')
+  const [code, setCode] = useState('')
   const [msg, setMsg] = useState('')
-  const [paying, setPaying] = useState(false)
 
   if (!open) return null
 
-  async function startPay() {
-    setPaying(true)
-    setMsg('正在创建订单...')
-    try {
-      const createResp = await fetch('/api/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: planTab }),
-      })
-      const createData = await createResp.json()
-      if (!createResp.ok) {
-        setMsg(createData?.error || '创建订单失败')
-        setPaying(false)
-        return
-      }
-
-      window.open(createData.pay_url, '_blank', 'noopener,noreferrer')
-      setMsg('已打开支付页面，正在等待支付结果...')
-
-      const orderId = createData.order_id
-      const timer = setInterval(async () => {
-        try {
-          const q = await fetch(`/api/get-code?order_id=${encodeURIComponent(orderId)}`)
-          const data = await q.json()
-          if (data.paid) {
-            clearInterval(timer)
-            onPaid(data.type, data.code)
-            setMsg('支付成功！已自动解锁')
-            setTimeout(() => {
-              onClose()
-              setMsg('')
-              setPaying(false)
-            }, 800)
-          }
-        } catch {
-          // ignore poll errors, keep polling
-        }
-      }, 3000)
-    } catch {
-      setMsg('支付流程启动失败，请重试')
-      setPaying(false)
+  function submitRedeem() {
+    const res = onRedeem(code, planTab)
+    if (!res.ok) {
+      setMsg(res.message)
+      return
     }
+    setMsg('兑换成功，已激活')
+    setCode('')
+    setTimeout(() => {
+      setMsg('')
+      onClose()
+    }, 700)
   }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-surface border border-border rounded-xl p-5">
+      <div className="w-full max-w-md bg-surface border border-border rounded-t-[20px] sm:rounded-xl p-5 max-h-[90vh] overflow-auto fixed bottom-0 left-0 right-0 sm:static sm:max-h-none">
         <div className="flex items-center justify-between">
           <h3 className="text-[16px] font-semibold text-text-primary">今日免费次数已用完</h3>
           <button onClick={onClose} className="text-text-faint hover:text-text-primary text-sm">关闭</button>
         </div>
 
-        <div className="mt-4 flex bg-base border border-border rounded-lg p-1">
+        <div className="mt-4 flex flex-col sm:flex-row bg-base border border-border rounded-lg p-1 gap-1 sm:gap-0">
           <button
-            onClick={() => setPlanTab('trial')}
-            className={['flex-1 py-2 rounded-md text-left px-2.5', planTab === 'trial' ? 'bg-surface-raised text-text-primary' : 'text-text-muted'].join(' ')}
+            onClick={() => setPlanTab('experience')}
+            className={['flex-1 py-2 rounded-md text-left px-2.5', planTab === 'experience' ? 'bg-surface-raised text-text-primary' : 'text-text-muted'].join(' ')}
           >
             <p className="text-[12px] font-medium">体验包：9.9元 / 20次</p>
             <p className="text-[10.5px] text-text-faint mt-0.5">约0.5元/次</p>
@@ -152,21 +123,35 @@ function RedeemModal({ open, onClose, onPaid }) {
         </p>
 
         <div className="mt-4 h-36 rounded-lg border border-dashed border-border bg-base flex items-center justify-center text-text-faint text-[12px]">
-          收款码图片占位
+          <img
+            src={planTab === 'month' ? '/pay-month.png' : '/pay-trial.png'}
+            alt="收款码"
+            className="h-full w-full object-contain rounded-lg"
+          />
         </div>
 
         <p className="text-[12px] text-text-muted mt-3 leading-relaxed">
-          付款后请备注您的微信号，我们将在10分钟内发送兑换码
+          扫码付款后，截图发微信 ZYZB247
+          <br />
+          我们将在5分钟内手动发送兑换码
         </p>
 
-        {!!msg && <p className="text-[12px] mt-3 text-accent">{msg}</p>}
+        <div className="mt-4">
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="输入兑换码"
+            className="w-full bg-base border border-border rounded-lg px-3.5 py-2.5 text-[13px] text-text-primary placeholder-text-faint outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20"
+          />
+          {!!msg && <p className="text-[12px] mt-2 text-accent">{msg}</p>}
+        </div>
 
         <button
-          onClick={startPay}
-          disabled={paying}
-          className="w-full mt-4 bg-accent text-black rounded-lg py-2.5 text-[13px] font-semibold hover:bg-[#e09610] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          onClick={submitRedeem}
+          className="w-full mt-4 bg-accent text-black rounded-lg py-2.5 text-[13px] font-semibold hover:bg-[#e09610] transition-colors"
         >
-          {paying ? '处理中...' : '去支付'}
+          立即兑换
         </button>
       </div>
     </div>
@@ -407,17 +392,26 @@ export default function App() {
     }
   }
 
-  function activatePlanByType(type, paidCode = '') {
+  function handleRedeem(rawCode, selectedTab) {
+    const code = (rawCode || '').trim().toUpperCase()
+    if (!code) return { ok: false, message: '请输入兑换码' }
+    const matched = REDEEM_CODE_LIST.find((it) => String(it.code).toUpperCase() === code)
+    if (!matched) return { ok: false, message: '兑换码无效，请检查后重试' }
+
     const current = normalizeUsageState(usageState)
+    if ((current.redeemedCodes || []).includes(code)) {
+      return { ok: false, message: '该兑换码已使用' }
+    }
+
+    const type = matched.type || selectedTab
     if (type === 'month') {
       current.monthCardExpiry = Date.now() + 30 * 24 * 60 * 60 * 1000
     } else {
       current.packRemaining += EXPERIENCE_TIMES
     }
-    if (paidCode) {
-      current.redeemedCodes = [...new Set([...(current.redeemedCodes || []), paidCode])]
-    }
+    current.redeemedCodes = [...new Set([...(current.redeemedCodes || []), code])]
     saveUsage(current)
+    return { ok: true }
   }
 
   function handleReset() {
@@ -504,7 +498,7 @@ export default function App() {
       usageBadgeTone={usageBadgeTone}
       onOpenGuide={() => setGuideOpen(true)}
     >
-      <div className="grid grid-cols-[400px_1fr] gap-5 h-[calc(100vh-56px-48px)]">
+      <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-4 md:gap-5 h-auto md:h-[calc(100vh-56px-48px)]">
 
         {/* ── 左列：输入表单 ── */}
         <TopicForm
@@ -569,7 +563,7 @@ export default function App() {
       <RedeemModal
         open={redeemOpen}
         onClose={() => setRedeemOpen(false)}
-        onPaid={activatePlanByType}
+        onRedeem={handleRedeem}
       />
       <GuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />
     </Layout>

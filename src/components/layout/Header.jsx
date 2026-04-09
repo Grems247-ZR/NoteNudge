@@ -31,15 +31,20 @@ export default function Header({ usageStatusText = '', usageBadgeTone = 'gold', 
 
         <div className="flex items-center gap-2.5">
           {usageStatusText && (
-            <span className={['text-[12px] border px-2.5 py-1 rounded-md', toneStyles[usageBadgeTone] || toneStyles.gold].join(' ')}>
+            <span className={['text-[11px] sm:text-[12px] border px-2 py-1 sm:px-2.5 rounded-md', toneStyles[usageBadgeTone] || toneStyles.gold].join(' ')}>
               {usageStatusText}
             </span>
           )}
           <button
-            className="text-[13px] text-text-muted hover:text-text-primary transition-colors duration-150 px-3 py-1.5 rounded-md hover:bg-surface-raised border border-transparent hover:border-border"
+            className="text-[13px] text-text-muted hover:text-text-primary transition-colors duration-150 px-2.5 sm:px-3 py-1.5 rounded-md hover:bg-surface-raised border border-transparent hover:border-border inline-flex items-center gap-1.5"
             onClick={onOpenGuide}
+            aria-label="使用说明"
           >
-            使用说明
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="opacity-90">
+              <path d="M12 17h.01M12 13a3 3 0 10-3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+            <span className="hidden md:inline">使用说明</span>
           </button>
         </div>
       </div>

@@ -191,18 +191,18 @@ function TopicRow({ topic, index, onGeneratePost }) {
   return (
     <div className="group py-3.5 border-t border-border first:border-0 first:pt-0">
       {/* 标题行 */}
-      <div className="flex items-start gap-3">
+      <div className="flex flex-col md:flex-row items-start gap-3">
         <span className="flex-shrink-0 w-5 h-5 rounded-md bg-accent/12 text-accent text-[11px] font-bold flex items-center justify-center mt-0.5">
           {index}
         </span>
-        <p className="flex-1 text-[13.5px] font-semibold text-text-primary leading-snug tracking-[-0.01em]">
+        <p className="flex-1 text-[14.5px] md:text-[13.5px] font-semibold text-text-primary leading-snug tracking-[-0.01em]">
           {topic.title}
         </p>
-        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+        <div className="flex items-center gap-2 w-full md:w-auto md:flex-shrink-0 md:ml-2 justify-between md:justify-start">
           {topic.difficulty && <DifficultyBadge level={topic.difficulty} />}
           <button
             onClick={handleCopy}
-            className="text-[12px] text-text-primary hover:text-black transition-colors px-3 py-1.5 rounded-lg border border-accent/40 bg-accent/20 hover:bg-accent font-medium"
+            className="text-[13px] md:text-[12px] text-text-primary hover:text-black transition-colors px-3 py-2.5 md:py-1.5 rounded-lg border border-accent/40 bg-accent/20 hover:bg-accent font-medium w-full md:w-auto min-h-11 md:min-h-0"
           >
             {copied ? '已复制' : '复制标题'}
           </button>
@@ -221,7 +221,7 @@ function TopicRow({ topic, index, onGeneratePost }) {
         <button
           onClick={handleGeneratePost}
           disabled={postLoading}
-          className="text-[12px] text-text-primary bg-surface border border-border hover:border-accent/40 hover:bg-surface-hover rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-[13px] md:text-[12px] text-text-primary bg-surface border border-border hover:border-accent/40 hover:bg-surface-hover rounded-lg px-3 py-2.5 md:py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto min-h-11 md:min-h-0"
         >
           {postLoading ? '生成中…' : '生成文案'}
         </button>
