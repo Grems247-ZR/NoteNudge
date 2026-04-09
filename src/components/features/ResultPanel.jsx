@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 // ─── 难度标签 ─────────────────────────────────────────────────────────────────
 
@@ -146,21 +146,45 @@ function FormulaCard({ formula }) {
 
 // ─── 卡片3 内部：单条选题 ─────────────────────────────────────────────────────
 
-function TopicRow({ topic, index }) {
+function TopicRow({ topic, index, onGeneratePost }) {
   const [copied, setCopied] = useState(false)
-
-  function formatTopicForCopy(data) {
-    return [
-      `【标题】${data?.title ?? ''}`,
-      `【钩子】${data?.hook ?? ''}`,
-      `【适合原因】${data?.reason ?? ''}`,
-    ].join('\n')
-  }
+  const [postLoading, setPostLoading] = useState(false)
+  const [postError, setPostError] = useState('')
+  const [postResult, setPostResult] = useState(null)
+  const [postCopied, setPostCopied] = useState(false)
 
   function handleCopy() {
-    navigator.clipboard.writeText(formatTopicForCopy(topic)).then(() => {
+    navigator.clipboard.writeText(topic?.title ?? '').then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 1800)
+    })
+  }
+
+  async function handleGeneratePost() {
+    if (!onGeneratePost) return
+    setPostLoading(true)
+    setPostError('')
+    const res = await onGeneratePost(topic?.title ?? '')
+    if (!res?.ok) {
+      setPostError(res?.error ?? '生成失败，请重试')
+      setPostResult(null)
+      setPostLoading(false)
+      return
+    }
+    setPostResult(res.data)
+    setPostLoading(false)
+  }
+
+  function handleCopyPost() {
+    if (!postResult) return
+    const text = [
+      postResult.content ?? '',
+      '',
+      ...(postResult.hashtags ?? []).map((t) => `#${t}`),
+    ].join('\n')
+    navigator.clipboard.writeText(text).then(() => {
+      setPostCopied(true)
+      setTimeout(() => setPostCopied(false), 1800)
     })
   }
 
@@ -178,9 +202,9 @@ function TopicRow({ topic, index }) {
           {topic.difficulty && <DifficultyBadge level={topic.difficulty} />}
           <button
             onClick={handleCopy}
-            className="text-[11px] text-text-muted hover:text-accent transition-colors px-2 py-0.5 rounded border border-border hover:border-accent/30 bg-base opacity-0 group-hover:opacity-100"
+            className="text-[12px] text-text-primary hover:text-black transition-colors px-3 py-1.5 rounded-lg border border-accent/40 bg-accent/20 hover:bg-accent font-medium"
           >
-            {copied ? '已复制' : '复制卡片'}
+            {copied ? '已复制' : '复制标题'}
           </button>
         </div>
       </div>
@@ -193,27 +217,84 @@ function TopicRow({ topic, index }) {
         </p>
       )}
 
-      {/* 适合原因 */}
-      {topic.reason && (
-        <p className="mt-1 ml-8 text-[11.5px] text-text-faint leading-relaxed">
-          {topic.reason}
-        </p>
+      <div className="mt-3 ml-8">
+        <button
+          onClick={handleGeneratePost}
+          disabled={postLoading}
+          className="text-[12px] text-text-primary bg-surface border border-border hover:border-accent/40 hover:bg-surface-hover rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {postLoading ? '生成中…' : '生成文案'}
+        </button>
+      </div>
+
+      {postError && (
+        <p className="mt-2 ml-8 text-[11.5px] text-red-400">{postError}</p>
       )}
+
+      {postResult && (
+        <div className="mt-3 ml-8 bg-base border border-border rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[12px] text-text-muted">已生成小红书文案</p>
+            <button
+              onClick={handleCopyPost}
+              className="text-[11.5px] text-text-primary hover:text-black bg-accent/20 hover:bg-accent px-2.5 py-1 rounded-md transition-colors"
+            >
+              {postCopied ? '已复制' : '复制文案'}
+            </button>
+          </div>
+          <p className="text-[12.5px] text-text-primary leading-relaxed whitespace-pre-wrap">
+            {postResult.content}
+          </p>
+          {(postResult.hashtags?.length ?? 0) > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {postResult.hashtags.map((tag) => (
+                <span key={tag} className="text-[11px] text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   )
 }
 
 // ─── 卡片3：选题建议 ──────────────────────────────────────────────────────────
 
-function TopicsCard({ topics }) {
+function TopicsCard({ topics, onGeneratePost }) {
+  const [expanded, setExpanded] = useState(false)
+  const visibleTopics = useMemo(
+    () => (expanded ? (topics ?? []) : (topics ?? []).slice(0, 5)),
+    [expanded, topics],
+  )
+
   return (
     <div className="bg-surface border border-border rounded-xl p-5">
       <SectionHeader title="选题建议" badge={`${topics?.length ?? 0} 个`} />
       <div>
-        {topics?.map((topic, i) => (
-          <TopicRow key={i} topic={topic} index={i + 1} />
+        {visibleTopics?.map((topic, i) => (
+          <TopicRow key={i} topic={topic} index={i + 1} onGeneratePost={onGeneratePost} />
         ))}
       </div>
+      {(topics?.length ?? 0) > 5 && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-3 w-full text-[12.5px] text-accent hover:text-accent/80 border border-border rounded-lg py-2 bg-base hover:bg-surface-raised transition-colors flex items-center justify-center gap-1.5"
+        >
+          <span>{expanded ? '收起' : '查看全部10个'}</span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            className={`transition-transform duration-200 ${expanded ? 'rotate-180' : 'rotate-0'}`}
+          >
+            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      )}
     </div>
   )
 }
@@ -271,7 +352,7 @@ function ListCard({ title, items }) {
 
 // ─── 主组件 ───────────────────────────────────────────────────────────────────
 
-export default function ResultPanel({ mode = 'topic', result, isLoading }) {
+export default function ResultPanel({ mode = 'topic', result, isLoading, onGeneratePost }) {
   if (isLoading) return <Skeleton />
 
   if (!result) return null
@@ -307,7 +388,7 @@ export default function ResultPanel({ mode = 'topic', result, isLoading }) {
         <FormulaCard formula={result.formula} />
       )}
       {result.topics?.length > 0 && (
-        <TopicsCard topics={result.topics} />
+        <TopicsCard topics={result.topics} onGeneratePost={onGeneratePost} />
       )}
     </div>
   )

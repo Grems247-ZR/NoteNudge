@@ -6,10 +6,19 @@
 
 import Header from './Header'
 
-export default function Layout({ children }) {
+export default function Layout({
+  children,
+  usageStatusText,
+  usageBadgeTone = 'gold',
+  onOpenGuide,
+}) {
   return (
     <div className="min-h-screen bg-base text-text-primary font-sans antialiased">
-      <Header />
+      <Header
+        usageStatusText={usageStatusText}
+        usageBadgeTone={usageBadgeTone}
+        onOpenGuide={onOpenGuide}
+      />
       <main className="max-w-[1280px] mx-auto px-6 py-6">
         {children}
       </main>

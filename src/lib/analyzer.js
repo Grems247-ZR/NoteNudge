@@ -3,11 +3,11 @@
  *
  * 负责：
  *   1. 构建 system / user prompt
- *   2. 调用后端代理 /api/generate（代理再转发给 Anthropic）
+ *   2. 调用后端代理 /api/deepseek（服务端再转发给 DeepSeek）
  *   3. 解析 AI 返回的 JSON，并做结构校验
  *   4. 统一错误处理，向上层抛出友好 Error
  *
- * 注意：Anthropic API 不支持跨域直调（CORS），且 API Key 不应暴露在前端包里。
+ * 注意：API Key 不应暴露在前端包里。
  * 所有 AI 请求必须经过 server.js 代理层，本文件不持有任何密钥。
  */
 
@@ -33,12 +33,13 @@ const DECONSTRUCT_SYSTEM_PROMPT = `你是中国顶级内容策略师，擅长拆
 
 /**
  * @param {string} userNotes   用户粘贴的近期笔记内容
- * @param {string} accountBio  账号一句话定位描述
+ * @param {string} accountBio  账号一句话定位描述（可选）
  * @returns {string}           完整的 user prompt
  */
 function buildUserPrompt(userNotes, accountBio) {
+  const normalizedBio = accountBio?.trim()
   return `## 我的账号定位
-${accountBio.trim()}
+${normalizedBio || '未提供（请根据笔记内容自行判断账号定位）'}
 
 ## 我最近发布的笔记内容
 ${userNotes.trim()}
@@ -86,6 +87,20 @@ ${viralNote.trim()}
     "爆款原因2",
     "爆款原因3"
   ]
+}`
+}
+
+function buildPostPrompt(topicTitle) {
+  return `请基于这个选题标题生成一篇可直接发布的小红书文案：
+标题：${topicTitle}
+
+要求：
+1) 正文约 300 字，口语化、真实、具画面感，适当加入 emoji
+2) 结尾给出 5 个推荐话题标签（不要带 #，只返回标签文本）
+3) 输出 JSON，不要加代码块：
+{
+  "content": "正文内容",
+  "hashtags": ["标签1","标签2","标签3","标签4","标签5"]
 }`
 }
 
@@ -159,24 +174,28 @@ function normalizeDeconstructResult(raw) {
   }
 }
 
-async function requestDeepSeek(messages) {
-  const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY
-  if (!apiKey) throw new Error('未配置 VITE_DEEPSEEK_API_KEY，请检查 .env 文件')
+function normalizePostResult(raw) {
+  if (!raw || typeof raw !== 'object') {
+    throw new TypeError('AI 返回结构异常')
+  }
+  return {
+    content: typeof raw.content === 'string' ? raw.content : '',
+    hashtags: Array.isArray(raw.hashtags) ? raw.hashtags.slice(0, 5) : [],
+  }
+}
 
+async function requestDeepSeek(messages) {
   let response
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 30000)
   try {
-    response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    response = await fetch('/api/deepseek', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
-        model: 'deepseek-chat',
         messages,
+        model: 'deepseek-chat',
         temperature: 0.7,
       }),
     })
@@ -196,7 +215,7 @@ async function requestDeepSeek(messages) {
       message = getReadableErrorMessage(err, message)
     } catch { /* ignore */ }
 
-    if (response.status === 401) message = 'API Key 无效，请检查 .env 文件中的 VITE_DEEPSEEK_API_KEY'
+    if (response.status === 401) message = 'API Key 无效，请检查服务端 DEEPSEEK_API_KEY 配置'
     if (response.status === 429) message = '请求过于频繁，请稍等片刻再试'
     if (response.status >= 500) message = 'DeepSeek 服务繁忙，请稍后重试'
     throw new Error(message)
@@ -228,13 +247,12 @@ async function requestDeepSeek(messages) {
  * 分析博主内容并生成选题建议。
  *
  * @param {string} userNotes    用户的近期笔记文本
- * @param {string} accountBio   账号一句话定位
+ * @param {string} accountBio   账号一句话定位（可选）
  * @returns {Promise<{ topics, analysis, formula }>}
  * @throws {Error} 带有用户友好提示的错误
  */
-export async function analyzeContent(userNotes, accountBio) {
+export async function analyzeContent(userNotes, accountBio = '') {
   if (!userNotes?.trim()) throw new Error('请粘贴你的笔记内容')
-  if (!accountBio?.trim()) throw new Error('请填写账号定位描述')
   const parsed = await requestDeepSeek([
     { role: 'system', content: SYSTEM_PROMPT },
     { role: 'user', content: buildUserPrompt(userNotes, accountBio) },
@@ -258,5 +276,19 @@ export async function analyzeViralContent(viralNote) {
     return normalizeDeconstructResult(parsed)
   } catch {
     throw new Error('AI 返回的数据结构异常，请重试')
+  }
+}
+
+export async function generatePostCopy(topicTitle) {
+  if (!topicTitle?.trim()) throw new Error('缺少选题标题')
+  const parsed = await requestDeepSeek([
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: buildPostPrompt(topicTitle) },
+  ])
+
+  try {
+    return normalizePostResult(parsed)
+  } catch {
+    throw new Error('文案生成结果异常，请重试')
   }
 }

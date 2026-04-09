@@ -4,16 +4,24 @@
  * 展示应用名称、Logo（可选）和平台标签（小红书 / 抖音）。
  */
 
-export default function Header() {
+const toneStyles = {
+  gold: 'text-accent/90 bg-accent/10 border-accent/20',
+  orange: 'text-orange-200 bg-orange-500/20 border-orange-400/35',
+  red: 'text-red-100 bg-red-500/20 border-red-400/35',
+}
+
+export default function Header({ usageStatusText = '', usageBadgeTone = 'gold', onOpenGuide }) {
   return (
     <header className="border-b border-border px-6 h-14 flex items-center">
       <div className="max-w-[1280px] mx-auto w-full flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-[6px] bg-accent flex items-center justify-center flex-shrink-0">
-            <span className="text-black text-[11px] font-bold leading-none">选</span>
-          </div>
+          <img
+            src="/notenudge-icon.png"
+            alt="NoteNudge logo"
+            className="w-6 h-6 rounded-[6px] object-cover flex-shrink-0"
+          />
           <span className="text-text-primary font-semibold text-[15px] tracking-[-0.01em]">
-            选题灵感
+            NoteNudge
           </span>
           <span className="w-[1.5px] h-3.5 rounded-full bg-accent/80 animate-pulse" />
           <span className="ml-1 text-[11px] text-text-faint font-normal tracking-wide uppercase">
@@ -21,12 +29,19 @@ export default function Header() {
           </span>
         </div>
 
-        <button
-          className="text-[13px] text-text-muted hover:text-text-primary transition-colors duration-150 px-3 py-1.5 rounded-md hover:bg-surface-raised border border-transparent hover:border-border"
-          onClick={() => {}}
-        >
-          使用说明
-        </button>
+        <div className="flex items-center gap-2.5">
+          {usageStatusText && (
+            <span className={['text-[12px] border px-2.5 py-1 rounded-md', toneStyles[usageBadgeTone] || toneStyles.gold].join(' ')}>
+              {usageStatusText}
+            </span>
+          )}
+          <button
+            className="text-[13px] text-text-muted hover:text-text-primary transition-colors duration-150 px-3 py-1.5 rounded-md hover:bg-surface-raised border border-transparent hover:border-border"
+            onClick={onOpenGuide}
+          >
+            使用说明
+          </button>
+        </div>
       </div>
     </header>
   )
