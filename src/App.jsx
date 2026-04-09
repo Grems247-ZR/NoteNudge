@@ -468,7 +468,7 @@ export default function App() {
     setCheckingAuth(true)
     setDebugMessage('')
     try {
-      const response = await fetch('/api/debug-auth')
+      const response = await fetch('/.netlify/functions/debug-auth')
       const data = await response.json()
       if (data.ok) {
         setDebugMessage(`权限正常，可用模型：${data.model}`)

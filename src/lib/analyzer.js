@@ -3,7 +3,7 @@
  *
  * 负责：
  *   1. 构建 system / user prompt
- *   2. 调用后端代理 /api/deepseek（服务端再转发给 DeepSeek）
+ *   2. 调用 Netlify Function /.netlify/functions/deepseek（服务端再转发给 DeepSeek）
  *   3. 解析 AI 返回的 JSON，并做结构校验
  *   4. 统一错误处理，向上层抛出友好 Error
  *
@@ -189,7 +189,7 @@ async function requestDeepSeek(messages) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 30000)
   try {
-    response = await fetch('/api/deepseek', {
+    response = await fetch('/.netlify/functions/deepseek', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
