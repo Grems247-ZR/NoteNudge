@@ -108,21 +108,33 @@ function buildPostPrompt(topicTitle) {
 
 /**
  * 从 AI 的文本回复中提取 JSON。
- * 兼容 AI 偶尔在 JSON 前后附加说明文字的情况。
+ * 兼容 markdown 代码块、前后说明文字、常见尾随逗号等。
  */
 function extractJSON(text) {
-  const trimmed = text.trim()
+  // 方法1：去掉```json和```包裹
+  let cleaned = String(text)
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/gi, '')
+    .trim()
 
-  // 优先尝试整体解析
+  // 方法2：找到第一个{和最后一个}之间的内容
+  const firstBrace = cleaned.indexOf('{')
+  const lastBrace = cleaned.lastIndexOf('}')
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1)
+  }
+
+  // 方法3：解析
   try {
-    return JSON.parse(trimmed)
+    return JSON.parse(cleaned)
   } catch {
-    // 提取第一个完整的 {...} 块
-    const match = trimmed.match(/\{[\s\S]*\}/)
-    if (match) {
-      return JSON.parse(match[0])
+    // 方法4：修复常见JSON错误，去掉末尾多余逗号
+    cleaned = cleaned.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']')
+    try {
+      return JSON.parse(cleaned)
+    } catch {
+      throw new SyntaxError('AI 返回内容中未找到有效 JSON')
     }
-    throw new SyntaxError('AI 返回内容中未找到有效 JSON')
   }
 }
 
