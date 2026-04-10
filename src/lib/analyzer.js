@@ -8,8 +8,13 @@
  *   4. 统一错误处理，向上层抛出友好 Error
  *
  * 注意：API Key 不应暴露在前端包里。
- * 所有 AI 请求必须经过 server.js 代理层，本文件不持有任何密钥。
+ * 所有 AI 请求必须经过 Netlify Function / 本地 server 代理，本文件不持有任何密钥。
+ * @see ../config/env.js — Vite 侧变量名 VITE_DEEPSEEK_API_KEY（可选占位，勿填真实 sk-）
  */
+
+import { touchViteDeepseekEnv } from '../config/env.js'
+
+touchViteDeepseekEnv()
 
 // ─── Prompt 构建 ──────────────────────────────────────────────────────────────
 

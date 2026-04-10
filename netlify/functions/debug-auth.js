@@ -1,5 +1,7 @@
+const { getDeepSeekApiKey } = require('./getDeepSeekKey')
+
 exports.handler = async function() {
-  const apiKey = process.env.DEEPSEEK_API_KEY
+  const apiKey = getDeepSeekApiKey()
   if (!apiKey) {
     return {
       statusCode: 401,

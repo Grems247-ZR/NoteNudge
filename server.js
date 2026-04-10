@@ -2,7 +2,7 @@
  * server.js — 本地开发用 API 代理
  *
  * 端口：3001（Vite dev server 运行在 5173，通过 proxy 转发）
- * 说明：线上 Vercel 走 /api/deepseek.js；本地开发走此 Express 代理。
+ * 说明：线上 Netlify 走 Functions；本地开发走此 Express 代理（Vite 将 /.netlify/functions 转到 /api）。
  */
 
 import 'dotenv/config'

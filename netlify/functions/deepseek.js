@@ -1,3 +1,5 @@
+const { getDeepSeekApiKey } = require('./getDeepSeekKey')
+
 exports.handler = async function(event) {
   if (event.httpMethod !== 'POST') {
     return {
@@ -6,7 +8,7 @@ exports.handler = async function(event) {
     }
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY
+  const apiKey = getDeepSeekApiKey()
   const body = event.body ? JSON.parse(event.body) : {}
   const { messages, model = 'deepseek-chat', temperature = 0.7 } = body
 
