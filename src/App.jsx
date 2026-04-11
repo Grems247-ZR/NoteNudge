@@ -305,6 +305,15 @@ export default function App() {
     return normalized
   }
 
+  /** 是否还有可用次数（不扣减，仅用于发起请求前校验） */
+  function hasUsageAvailable() {
+    const current = normalizeUsageState(usageState)
+    if (current.monthCardExpiry && current.monthCardExpiry > Date.now()) return true
+    if (current.packRemaining > 0) return true
+    if (current.freeUsed < FREE_DAILY_LIMIT) return true
+    return false
+  }
+
   function consumeOneUsage() {
     const current = normalizeUsageState(usageState)
     if (current.monthCardExpiry && current.monthCardExpiry > Date.now()) {
@@ -360,7 +369,9 @@ export default function App() {
     setFieldError('')
     setError(null)
     setResult(null)
-    if (!consumeOneUsage()) {
+    setNotice('')
+    setDebugMessage('')
+    if (!hasUsageAvailable()) {
       setRedeemOpen(true)
       return
     }
@@ -371,6 +382,7 @@ export default function App() {
       const data = activeTab === 'topic'
         ? await analyzeContent(topicInputText)
         : await analyzeViralContent(viralNote)
+      consumeOneUsage()
       setResult(data)
       const previewBase = activeTab === 'topic' ? `${topicDirection} ${targetAudience}` : viralNote
       const preview = (previewBase || '').replace(/\s+/g, ' ').slice(0, 20) || '未填写定位'
@@ -443,13 +455,14 @@ export default function App() {
   }
 
   async function handleGeneratePostByTopic(topicTitle) {
-    if (!consumeOneUsage()) {
+    if (!hasUsageAvailable()) {
       setRedeemOpen(true)
       return { ok: false, error: '今日免费次数已用完' }
     }
 
     try {
       const data = await generatePostCopy(topicTitle)
+      consumeOneUsage()
       return { ok: true, data }
     } catch (err) {
       return { ok: false, error: err?.message ?? '文案生成失败，请重试' }
@@ -527,6 +540,9 @@ export default function App() {
           recentAnalyses={recentAnalyses}
           onRestoreRecent={handleRestoreRecent}
           onClearRecent={handleClearRecent}
+          onGenerateClick={() => {
+            setError(null)
+          }}
         />
 
         {/* ── 右列：结果 / 空状态 ── */}

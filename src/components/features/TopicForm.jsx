@@ -27,6 +27,7 @@ export default function TopicForm({
   recentAnalyses,
   onRestoreRecent,
   onClearRecent,
+  onGenerateClick,
 }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [flashDirectionTitle, setFlashDirectionTitle] = useState(false)
@@ -34,6 +35,10 @@ export default function TopicForm({
   function handleSubmit(e) {
     e.preventDefault()
     onSubmit()
+  }
+
+  function handleGenerateButtonClick() {
+    onGenerateClick?.()
   }
 
   const historyItems = useMemo(
@@ -210,6 +215,7 @@ export default function TopicForm({
             loading={loading}
             disabled={loading}
             className="w-full py-3 text-[14px]"
+            onClick={handleGenerateButtonClick}
           >
             {loading ? '分析中…' : activeTab === 'topic' ? '生成选题 →' : '开始解构'}
           </Button>

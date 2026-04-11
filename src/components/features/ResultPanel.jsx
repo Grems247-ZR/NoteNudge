@@ -162,17 +162,19 @@ function TopicRow({ topic, index, onGeneratePost }) {
 
   async function handleGeneratePost() {
     if (!onGeneratePost) return
-    setPostLoading(true)
     setPostError('')
-    const res = await onGeneratePost(topic?.title ?? '')
-    if (!res?.ok) {
-      setPostError(res?.error ?? '生成失败，请重试')
-      setPostResult(null)
+    setPostResult(null)
+    setPostLoading(true)
+    try {
+      const res = await onGeneratePost(topic?.title ?? '')
+      if (!res?.ok) {
+        setPostError(res?.error ?? '生成失败，请重试')
+        return
+      }
+      setPostResult(res.data)
+    } finally {
       setPostLoading(false)
-      return
     }
-    setPostResult(res.data)
-    setPostLoading(false)
   }
 
   function handleCopyPost() {
@@ -275,7 +277,12 @@ function TopicsCard({ topics, onGeneratePost }) {
       <SectionHeader title="选题建议" badge={`${topics?.length ?? 0} 个`} />
       <div>
         {visibleTopics?.map((topic, i) => (
-          <TopicRow key={i} topic={topic} index={i + 1} onGeneratePost={onGeneratePost} />
+          <TopicRow
+            key={`${topic?.title ?? 't'}-${i}`}
+            topic={topic}
+            index={i + 1}
+            onGeneratePost={onGeneratePost}
+          />
         ))}
       </div>
       {(topics?.length ?? 0) > 5 && (

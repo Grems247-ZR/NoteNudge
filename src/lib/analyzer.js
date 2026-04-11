@@ -201,10 +201,12 @@ function normalizePostResult(raw) {
   }
 }
 
+const DEEPSEEK_FETCH_TIMEOUT_MS = 60_000
+
 async function requestDeepSeek(messages) {
   let response
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000)
+  const timeoutId = setTimeout(() => controller.abort(), DEEPSEEK_FETCH_TIMEOUT_MS)
   try {
     response = await fetch('/.netlify/functions/deepseek', {
       method: 'POST',
@@ -218,7 +220,7 @@ async function requestDeepSeek(messages) {
     })
   } catch (err) {
     if (err?.name === 'AbortError') {
-      throw new Error('请求超时，请重试')
+      throw new Error('生成较慢，请重试')
     }
     throw new Error('网络请求失败，请检查网络或 API 服务可用性')
   } finally {
